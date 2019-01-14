@@ -36,13 +36,19 @@ class HeapView: UIView {
             // show there is nothing to drew
         return
         }
-        
+        // remove all old nodes but leave the red removed nodes in the view
         subviews.forEach({
-            
             if $0.tag != 99  {
                 $0.removeFromSuperview()
             }})
-        
+        // here i want to collect some information about the heap tree from the nodes array
+        // first i want to know what is the tree hieght floor(log2(n)), n is the how many nodes in the array
+        // so i can drew every level of the tree
+        // and i need a start x and y postion
+        // then i need to calculate the x shift for every node in the level
+        // and the y shift for every level
+        // then i loop on the levels and start shift in x and y to drew every node of the array in its place
+        // and calculate the space between the nodes, so it shaps a tree
         let nodesCountInDouble = Double(nodes.count)
         let heapHieght = Int(floor(log2(nodesCountInDouble)))
                 
@@ -56,19 +62,27 @@ class HeapView: UIView {
             
             let numberOfNodesInTheLevel = Double (endIndex - startIndex + 1)
 
-            
+            // check if the index is out of the array range set the end index to the end index in the array
+            // i added this cause i calculate the start and end index of the tree level but actually
+            // the tree maybe has just one element in this level
+            // so this prevent the code from crashing whin it call index out of range
             if endIndex > nodes.count - 1 {
                 endIndex = nodes.count - 1
             }
             
+            // here i shift y with (tree hieght * constant of 25) so it drew in the same y postion
+            // for the whole level
             let startY = y + (CGFloat(i) * CGFloat(25))
             
+            // here i calculate the nodes on the left hand side in the same level
+            // also the spaces between this nodes on the left hand side of that level
+            // so i will be able to calculate the start point of the first left node in that level
+            // and from there i can shift x with constatant of 40 to the right and start drew the next node
+            // i keep shifting the x untill the last node in that level
             let lengthOfNodesOnTheLeft = (numberOfNodesInTheLevel / 2) * 20
             let lengthOfSpaceBetweenTheNodesOnTheLeft = ((numberOfNodesInTheLevel - 1) * 20) / 2
-            
             let startX = x - CGFloat(lengthOfNodesOnTheLeft + lengthOfSpaceBetweenTheNodesOnTheLeft)
 
-            
             let shiftX =  40
             var shiftXCounter = 0
             
@@ -90,7 +104,9 @@ class HeapView: UIView {
             }
         }
     }
-    
+    // i need function to print the heap tree array values on the screen for the user
+    // so i create this function to take the [NodeClass] and loop on it
+    // and returns [Int] so i can print it in the label on the screen
     func getValueArrayFromNodeArray(nodeArray: [NodeClass]) -> [Int] {
         
         var valueArray = [Int]()
@@ -98,11 +114,14 @@ class HeapView: UIView {
         for node in nodeArray {
             valueArray.append(node.value)
         }
-        
         return valueArray
-        
     }
     
+    // this function will be called from the UpdateHeapViewDelegate
+    // when the MyHeap class will do any compare down it will send this nodeSwitchedTrackArray
+    // which contains all switched nodes indexs in pair, so the view can move teh nodes in the same way
+    // here i do the prep for the switch and i call the switch function,
+    // and clean all the code in the completion block
     func switchNodesWithSwitchTrack(nodeSwitchedTrackArray: [(Int,Int)]) {
         
         var indextrackArray = nodeSwitchedTrackArray
@@ -115,13 +134,14 @@ class HeapView: UIView {
                 self.switchNodesWithSwitchTrack(nodeSwitchedTrackArray: indextrackArray)
             }
         }
-        
-        
     }
     
-    
+    // here i need to do the actual node swtich in the interface
+    // i need to switch tags between nodes
+    // and change background color of the valueView to orange
+    // also update the indexView with the new tag
+    // then change background color of the valueView to blue again
     func switchEment(firestIndex: Int, secondIndex: Int,completion: (@escaping() -> Void)) {
-        
         
         var firstNodeView = NodeView()
         var secondNodeView = NodeView()
@@ -132,8 +152,6 @@ class HeapView: UIView {
             secondNodeView = $0 as! NodeView
             }
         })
-        
-
         
             firstNodeView.tag = secondIndex
             secondNodeView.tag = firestIndex
@@ -162,9 +180,16 @@ class HeapView: UIView {
                     completion()
                 })
             }
-        
     }
     
+    // this function will be called from the UpdateHeapViewDelegate
+    // when the MyHeap class remove the root node it will give the node class to the heapView
+    // through this delegate call so the heapView also can remove the root node to the top of the view
+    // and change the valueView to red and tag it 99
+    // also i need to calculate the postion for the new removed node on top of the view,
+    // so i use removedNodesCounter as counter of the removed nodes
+    // i shift x with = removedNodesCounter * 30
+    // i shift y with = floor(Double(self.removedNodesCounter / 16) * 25)
     func removeNode(node: NodeClass) {
         
         let yShift = floor(Double(self.removedNodesCounter / 16) * 25)
@@ -174,20 +199,19 @@ class HeapView: UIView {
             
             node.nodeView.frame = CGRect(x: 10 + xShift, y: Int(20 + yShift) , width: 30, height: 20)
             
-            
         }) { (complete) in
             node.nodeView.valueView.backgroundColor = .red
             node.nodeView.tag = 99
             node.nodeView.configureWithIndex(index: 0)
-
-
+            
             self.removedNodesCounter += 1
         }
-        
     }
     
+    // this function will be called from the UpdateHeapViewDelegate
+    // when the MyHeap class remove the root node and replace it with the last node of the tree
+    // it will give the nodes class to the heapView to dreww the move of the switch
     func removeHeadMoveLastNodeToTheRoot(rootNodeToRemove: NodeClass, lastNodeToReplace: NodeClass) {
-        
         
         let yShift = floor(Double(self.removedNodesCounter / 16) * 25)
         let xShift = self.removedNodesCounter * 30
@@ -196,12 +220,10 @@ class HeapView: UIView {
             
             rootNodeToRemove.nodeView.frame = CGRect(x: 10 + xShift, y: Int(20 + yShift) , width: 30, height: 20)
             
-            
         }) { (complete) in
             rootNodeToRemove.nodeView.valueView.backgroundColor = .red
             rootNodeToRemove.nodeView.tag = 99
             rootNodeToRemove.nodeView.configureWithIndex(index: 0)
-            
             
             self.removedNodesCounter += 1
             
@@ -213,26 +235,32 @@ class HeapView: UIView {
             }) { (complete) in
                 lastNodeToReplace.nodeView.valueView.backgroundColor = .blue
                 
+                // after the heapView finish moving the root node and the last node,
+                // it calls the switchNodesAccordingToNodeSwitchIndexTrackingArray
+                // to check if the MyHeap Class made any node switch while it was compare down from the root node
+                // to the end of the array
+                // if any switches happended it will be stord in nodeSwitchIndexTrackingArray as pair of indexs
                 self.switchNodesAccordingToNodeSwitchIndexTrackingArray()
-
-                
             }
         }
-        
-   
-        
     }
-    
+    // this function will be called from the UpdateHeapViewDelegate
+    // if the compare Down in the MyHeap made any node switch it call this function
+    // to store the indexs of the two nodes switched in nodeSwitchIndexTrackingArray
     func updateNodeSwitchIndexTrackingArray(switchIndex: (Int, Int)) {
-        
         nodeSwitchIndexTrackingArray.append(switchIndex)
-        
     }
-    
+    // i needed function to clear nodeSwitchIndexTrackingArray before the MyHeap class starts
+    // Compare down the tree so it prevet having old data in that variable
+    // specially i don't know which call back will be executed first
+    // as the Myheap class will run the whole code in the scope and the call back will come any time
     func clearNodeSwitchIndexTrackingArray() {
         nodeSwitchIndexTrackingArray.removeAll()
     }
     
+    // i need function to execute the snode switch by order in the interface,
+    // so i check if there is any node switches in nodeSwitchIndexTrackingArray
+    // and start switch one by one so the user can see it
     func switchNodesAccordingToNodeSwitchIndexTrackingArray() {
         
         if !nodeSwitchIndexTrackingArray.isEmpty,
@@ -244,14 +272,10 @@ class HeapView: UIView {
                 self.switchNodesWithSwitchTrack(nodeSwitchedTrackArray: self.nodeSwitchIndexTrackingArray)
                 
                 self.finishedUpdateTheHeapViewDelegate.completedNodeRemove()
-
             }
         } else {
             self.finishedUpdateTheHeapViewDelegate.completedNodeRemove()
             nodeSwitchIndexTrackingArray.removeAll()
-
         }
     }
-    
-    
 }
